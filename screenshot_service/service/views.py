@@ -1,14 +1,29 @@
-from rest_framework import generics, status
+from rest_framework import status, viewsets
 from rest_framework.response import Response
+from celery.result import AsyncResult
+from service.permissions import CheckParams, CheckTaskId
+from service.tasks import parse
 
-from service.tasks import create_task
 
+class CreateTaskAPI(viewsets.ViewSet):
+    def get_permissions(self):
+        permissions = []
+        if self.action == 'create':
+            permissions.append(CheckParams())
+        elif self.action == 'retrieve':
+            permissions.append(CheckTaskId())
+        return permissions
 
-class CreateTaskAPI(generics.CreateAPIView):
-
-    def create(self, request, *args, **kwargs):
+    def create(self, request):
         url, depth = request.query_params.get('url'), request.query_params.get('depth'),
-        create_task.delay(url, depth)
-        data = {'task': 'id'}
-        headers = self.get_success_headers(data)
-        return Response(data=data, status=status.HTTP_200_OK, headers=headers)
+        task = parse.delay(url, depth)
+        data = {'task': task.id}
+        return Response(data=data, status=status.HTTP_200_OK)
+
+    def retrieve(self, request):
+        task_id = request.query_params.get('task_id')
+        res = AsyncResult(task_id)
+        data = {
+            'status': res.status
+        }
+        return Response(data=data, status=status.HTTP_200_OK)
