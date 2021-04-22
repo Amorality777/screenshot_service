@@ -1,0 +1,3 @@
+celery -A screenshot_service worker -l INFO --pool=solo
+sudo docker-compose up
+python manage.py runserver
