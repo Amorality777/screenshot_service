@@ -1,17 +1,15 @@
 from rest_framework.permissions import BasePermission
 
+from service.utils import check_url
+
 
 class CheckParams(BasePermission):
-    message = "required parameter 'url'/'depth' is not specified"
-
     def has_permission(self, request, view):
         url = request.query_params.get('url')
         depth = request.query_params.get('depth')
-        return url and depth
+        return url and check_url(url) and depth and int(depth) < 6
 
 
 class CheckTaskId(BasePermission):
-    message = "required parameter 'task_id' is not specified"
-
     def has_permission(self, request, view):
         return request.query_params.get('task_id')
