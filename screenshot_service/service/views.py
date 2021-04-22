@@ -4,9 +4,11 @@ from django.http import Http404
 from django_celery_results.models import TaskResult
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from service.models import Screenshot
+from service.permissions import CheckParams
 from service.serializers import TaskSerializer, TaskInProcessSerializer, ScreenshotSerializer
 from service.tasks import parse
 
@@ -22,6 +24,11 @@ class CreateTaskAPI(viewsets.ModelViewSet):
         task = TaskResult.objects.get(task_id=task.id)
         serializer = TaskInProcessSerializer(instance=task)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def get_permissions(self):
+        permissions = [AllowAny()]
+        if self.action == 'create':
+            permissions.append(CheckParams)
 
     def get_serializer_class(self):
         obj = self.get_object()
